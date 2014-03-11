@@ -150,6 +150,7 @@ object API extends Controller {
         }
       }
   }
+  val actionNames: Mapping[String] = of[String] verifying Constraints.pattern("""[0-9A-Za-z_-]+""".r, "pio_action", "Must be consist of alphanumeric, - and _ characters.")
   val itypes: Mapping[String] = of[String] verifying Constraints.pattern("""[^\t]+""".r, "itypes", "Must not contain \t.")
   val latlngRegex = """-?\d+(\.\d*)?,-?\d+(\.\d*)?""".r
   val latlng: Mapping[String] = of[String] verifying Constraint[String]("latlng", () => latlngRegex) {
@@ -359,7 +360,7 @@ object API extends Controller {
     FormattedResponse(format) {
       Attributes(tuple(
         "pio_appkey" -> nonEmptyText,
-        "pio_action" -> nonEmptyText,
+        "pio_action" -> actionNames,
         "pio_uid" -> nonEmptyText,
         "pio_iid" -> nonEmptyText,
         "pio_t" -> optional(timestamp),
@@ -384,13 +385,10 @@ object API extends Controller {
             case "rate" => rate
             case _ => None
           }
-          val validActions = List(u2iActions.rate, u2iActions.like, u2iActions.dislike, u2iActions.view, u2iActions.conversion)
 
           // additional user input checking
           if ((action == u2iActions.rate) && (vValue == None)) {
             APIMessageResponse(BAD_REQUEST, Map("errors" -> APIErrors(Seq(Map("field" -> "pio_rate", "message" -> "Required for rate action.")))))
-          } else if (!validActions.contains(action)) {
-            APIMessageResponse(BAD_REQUEST, Map("errors" -> APIErrors(Seq(Map("field" -> "pio_action", "message" -> "Custom action is not supported yet.")))))
           } else {
             u2iActions.insert(U2IAction(
               appid = app.id,
