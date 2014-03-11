@@ -13,6 +13,7 @@ import com.github.nscala_time.time.Imports._
  * @param latlng Geolocation of this action.
  * @param v The value of this action (if applicable).
  * @param price Price associated with this action (if applicable).
+ * @param attributes Attributes associated with this action.
  */
 case class U2IAction(
   appid: Int,
@@ -22,7 +23,8 @@ case class U2IAction(
   t: DateTime,
   latlng: Option[Tuple2[Double, Double]],
   v: Option[Int],
-  price: Option[Double])
+  price: Option[Double],
+  attributes: Option[Map[String, Any]] = None)
 
 /** Base trait for implementations that interact with user-to-item actions in the backend app data store. */
 trait U2IActions {

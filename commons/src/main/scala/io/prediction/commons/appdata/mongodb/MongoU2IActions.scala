@@ -1,6 +1,6 @@
 package io.prediction.commons.appdata.mongodb
 
-import io.prediction.commons.MongoUtils._
+import io.prediction.commons.MongoUtils.{ attributesToMongoDBObject, emptyObj, getAttributesFromDBObject, idWithAppid }
 import io.prediction.commons.appdata.{ U2IAction, U2IActions }
 
 import com.mongodb.casbah.Imports._
@@ -9,7 +9,6 @@ import com.github.nscala_time.time.Imports._
 
 /** MongoDB implementation of Items. */
 class MongoU2IActions(db: MongoDB) extends U2IActions {
-  private val emptyObj = MongoDBObject()
   private val u2iActionColl = db("u2iActions")
 
   RegisterJodaTimeConversionHelpers()
@@ -23,7 +22,8 @@ class MongoU2IActions(db: MongoDB) extends U2IActions {
     val lnglat = u2iAction.latlng map { l => MongoDBObject("lnglat" -> MongoDBList(l._2, l._1)) } getOrElse emptyObj
     val v = u2iAction.v map { v => MongoDBObject("v" -> v) } getOrElse emptyObj
     val price = u2iAction.price map { p => MongoDBObject("price" -> p) } getOrElse emptyObj
-    u2iActionColl.insert(appid ++ action ++ uid ++ iid ++ t ++ lnglat ++ v ++ price)
+    val attributes = u2iAction.attributes map { a => attributesToMongoDBObject(a) } getOrElse emptyObj
+    u2iActionColl.insert(appid ++ action ++ uid ++ iid ++ t ++ lnglat ++ v ++ price ++ attributes)
   }
 
   def getAllByAppid(appid: Int) = new MongoU2IActionIterator(u2iActionColl.find(MongoDBObject("appid" -> appid)))
@@ -48,7 +48,8 @@ class MongoU2IActions(db: MongoDB) extends U2IActions {
       t = dbObj.as[DateTime]("t"),
       latlng = dbObj.getAs[MongoDBList]("lnglat") map { lnglat => (lnglat(1).asInstanceOf[Double], lnglat(0).asInstanceOf[Double]) },
       v = dbObj.getAs[Int]("v"),
-      price = dbObj.getAs[Double]("price")
+      price = dbObj.getAs[Double]("price"),
+      attributes = Option(getAttributesFromDBObject(dbObj)).filter(!_.isEmpty)
     )
   }
 

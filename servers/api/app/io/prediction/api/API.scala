@@ -357,7 +357,7 @@ object API extends Controller {
   /** unified user to item action handler */
   def userToItemAction(format: String) = Action { implicit request =>
     FormattedResponse(format) {
-      Form(tuple(
+      Attributes(tuple(
         "pio_appkey" -> nonEmptyText,
         "pio_action" -> nonEmptyText,
         "pio_uid" -> nonEmptyText,
@@ -366,9 +366,18 @@ object API extends Controller {
         "pio_latlng" -> optional(latlng),
         "pio_rate" -> optional(number(1, 5)),
         "pio_price" -> optional(numeric)
-      )).bindFromRequest.fold(
+      ), Set( // all reserved attributes
+        "pio_appkey",
+        "pio_action",
+        "pio_uid",
+        "pio_iid",
+        "pio_t",
+        "pio_latlng",
+        "pio_rate",
+        "pio_price"
+      )).bindFromRequestAndFold(
         f => bindFailed(f.errors),
-        fdata => AuthenticatedApp(fdata._1) { implicit app =>
+        (fdata, attributes) => AuthenticatedApp(fdata._1) { implicit app =>
           val (appkey, action, uid, iid, t, latlng, rate, price) = fdata
 
           val vValue: Option[Int] = action match {
@@ -383,7 +392,7 @@ object API extends Controller {
           } else if (!validActions.contains(action)) {
             APIMessageResponse(BAD_REQUEST, Map("errors" -> APIErrors(Seq(Map("field" -> "pio_action", "message" -> "Custom action is not supported yet.")))))
           } else {
-
+            println(attributes)
             u2iActions.insert(U2IAction(
               appid = app.id,
               action = action,
@@ -392,7 +401,8 @@ object API extends Controller {
               t = t map { parseDateTimeFromString(_) } getOrElse DateTime.now,
               latlng = latlng map { parseLatlng(_) },
               v = vValue,
-              price = price map { _.toDouble }
+              price = price map { _.toDouble },
+              attributes = if (attributes.isEmpty) None else Some(attributes)
             ))
             APIMessageResponse(CREATED, Map("message" -> ("Action " + action + " recorded.")))
           }
