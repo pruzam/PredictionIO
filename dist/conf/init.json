@@ -92,6 +92,17 @@
                         ]
                     }
                 },
+                "seenActions": {
+                    "name": "",
+                    "description": "",
+                    "constraint": {
+                        "paramtype": "string"
+                    },
+                    "defaultvalue": "",
+                    "ui": {
+                        "uitype": "text"
+                    }
+                },
                 "goal": {
                     "name": "Recommend items that users will",
                     "constraint": {
@@ -156,6 +167,14 @@
                             "description": "Should the system recommend items that users have seen before?",
                             "params": [
                                 "unseenonly"
+                            ]
+                        },
+                        {
+                            "name": "Seen Actions",
+                            "sectiontype": "normal",
+                            "description": "Actions to be treated as seen (space-separated string). If empty, all actions will be treated as seen.",
+                            "params": [
+                                "seenActions"
                             ]
                         },
                         {
