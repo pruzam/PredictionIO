@@ -1,6 +1,6 @@
 name := "predictionio-scheduler"
 
-version := "0.6.8-ca1"
+version := "0.6.8-ca2-SNAPSHOT"
 
 organization := "io.prediction"
 

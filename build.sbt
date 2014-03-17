@@ -4,7 +4,7 @@ import com.typesafe.sbt.packager.Keys._
 
 name := "predictionio"
 
-version in ThisBuild := "0.6.8-ca1"
+version in ThisBuild := "0.6.8-ca2-SNAPSHOT"
 
 organization in ThisBuild := "io.prediction"
 
