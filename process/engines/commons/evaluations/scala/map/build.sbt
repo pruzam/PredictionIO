@@ -1,12 +1,13 @@
 import xerial.sbt.Pack._
 
-name := "predictionio-process-commons-evaluations-paramgen"
+name := "predictionio-process-commons-metrics-scala-map"
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.1.1",
   "ch.qos.logback" % "logback-core" % "1.1.1",
   "com.github.scopt" %% "scopt" % "3.2.0",
-  "org.clapper" %% "grizzled-slf4j" % "1.0.1")
+  "org.clapper" %% "grizzled-slf4j" % "1.0.1",
+  "org.specs2" %% "specs2" % "2.3.10" % "test")
 
 packSettings
 
@@ -16,6 +17,6 @@ packExpandedClasspath := true
 
 packGenerateWindowsBatFile := false
 
-packMain := Map("paramgen" -> "io.prediction.evaluations.commons.paramgen.ParamGen")
+packMain := Map("mapatk" -> "io.prediction.metrics.commons.map.MAPAtK")
 
-packJvmOpts := Map("paramgen" -> Common.packCommonJvmOpts)
+packJvmOpts := Map("mapatk" -> Common.packCommonJvmOpts)
