@@ -81,6 +81,7 @@ lazy val processEnginesCommonsEvalHadoopScalding = project
 lazy val processEnginesCommonsEvalHadoopScaldingU2ITrainingTestSplit = project
   .in(file("process/engines/commons/evaluations/hadoop/scalding/u2itrainingtestsplit"))
   .dependsOn(processCommonsHadoopScalding)
+  .settings(scalariformSettings: _*)
 
 lazy val processEnginesCommonsEvalScalaMetricsMAP = project
   .in(file("process/engines/commons/evaluations/scala/map"))
@@ -254,5 +255,9 @@ lazy val toolsSoftwareManager = project.in(file("tools/softwaremanager"))
   .settings(scalariformSettings: _*)
 
 lazy val toolsUsers = project.in(file("tools/users"))
+  .dependsOn(commons)
+  .settings(scalariformSettings: _*)
+
+lazy val toolsMigrationStandardizedInfoIDs = project.in(file("tools/migration/0.7/infos"))
   .dependsOn(commons)
   .settings(scalariformSettings: _*)

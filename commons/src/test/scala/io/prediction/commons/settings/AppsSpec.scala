@@ -5,34 +5,40 @@ import org.specs2.specification.Step
 import com.mongodb.casbah.Imports._
 
 class AppsSpec extends Specification {
-  def is =
-    "PredictionIO Apps Specification" ^
-      p ^
-      "Apps can be implemented by:" ^ endp ^
-      "1. MongoApps" ^ mongoApps ^ end
+  def is = s2"""
 
-  def mongoApps = p ^
-    "MongoApps should" ^
-    "behave like any Apps implementation" ^ apps(newMongoApps) ^
-    Step(MongoConnection()(mongoDbName).dropDatabase())
+  PredictionIO Apps Specification
 
-  def apps(apps: Apps) = {
-    t ^
-      "get two apps by user ID" ! getByUserid(apps) ^
-      "get an app by its appkey" ! getByAppkey(apps) ^
-      "get an app by a non-existing appkey and fail" ! getByAppkeyNonExist(apps) ^
-      "get an app by its appkey and user ID" ! getByAppkeyAndUserid(apps) ^
-      "get an app by its appkey and a non-existing user ID and fail" ! getByAppkeyAndUseridNonExist(apps) ^
-      "get an app by its ID and user ID" ! getByIdAndUserid(apps) ^
-      "get an app by a non-existing ID and user ID and fail" ! getByIdAndUseridNonExist(apps) ^
-      "delete an app by its ID and user ID" ! deleteByIdAndUserid(apps) ^
-      "check existence of an app by its ID, appkey and user ID" ! existsByIdAndAppkeyAndUserid(apps) ^
-      "updating an app" ! update(apps) ^
-      "updating an app's appkey" ! updateAppkeyByAppkeyAndUserid(apps) ^
-      "updating an app's timezone" ! updateTimezoneByAppkeyAndUserid(apps) ^
-      "backup and restore apps" ! backuprestore(apps) ^
-      bt
-  }
+    Apps can be implemented by:
+    - MongoApps ${mongoApps}
+
+  """
+
+  def mongoApps = s2"""
+
+    MongoApps should
+    - behave like any Apps implementation ${apps(newMongoApps)}
+    - (database cleanup) ${Step(MongoConnection()(mongoDbName).dropDatabase())}
+
+  """
+
+  def apps(apps: Apps) = s2"""
+
+    get two apps by user ID ${getByUserid(apps)}
+    get an app by its appkey ${getByAppkey(apps)}
+    get an app by a non-existing appkey and fail ${getByAppkeyNonExist(apps)}
+    get an app by its appkey and user ID ${getByAppkeyAndUserid(apps)}
+    get an app by its appkey and a non-existing user ID and fail ${getByAppkeyAndUseridNonExist(apps)}
+    get an app by its ID and user ID ${getByIdAndUserid(apps)}
+    get an app by a non-existing ID and user ID and fail ${getByIdAndUseridNonExist(apps)}
+    delete an app by its ID and user ID ${deleteByIdAndUserid(apps)}
+    check existence of an app by its ID, appkey and user ID ${existsByIdAndAppkeyAndUserid(apps)}
+    updating an app ${update(apps)}
+    updating an app's appkey ${updateAppkeyByAppkeyAndUserid(apps)}
+    updating an app's timezone ${updateTimezoneByAppkeyAndUserid(apps)}
+    backup and restore apps ${backuprestore(apps)}
+
+  """
 
   val mongoDbName = "predictionio_mongoapps_test"
   def newMongoApps = new mongodb.MongoApps(MongoConnection()(mongoDbName))
