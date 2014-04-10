@@ -23,6 +23,7 @@ class APISpec extends Specification {
   val engines = config.getSettingsEngines()
   val algos = config.getSettingsAlgos()
   val items = config.getAppdataItems()
+  val u2iActions = config.getAppdataU2IActions()
   val itemRecScores = config.getModeldataItemRecScores()
   val itemSimScores = config.getModeldataItemSimScores()
 
@@ -214,6 +215,35 @@ class APISpec extends Specification {
         "pio_iid" -> Seq("fooitem"),
         "pio_itypes" -> Seq("footype\tbartype"))))
       response.status must beEqualTo(BAD_REQUEST)
+    }
+  }
+
+  "User-to-Item Actions" should {
+    "collect arbitrary attributes" in new WithServer {
+      val response = Helpers.await(wsUrl(s"/actions/u2i.json").post(Map(
+        "pio_appkey" -> Seq("appkey"),
+        "pio_action" -> Seq("like"),
+        "pio_uid" -> Seq("foo"),
+        "pio_iid" -> Seq("bar"),
+        "foo" -> Seq("bar"),
+        "fresh" -> Seq("meat"))))
+      val actions = u2iActions.getAllByAppid(appid).toSeq
+      val action = actions.filter(a => a.uid == "foo").apply(0)
+      action.attributes must beSome(Map("foo" -> "bar", "fresh" -> "meat"))
+    }
+
+    "collect arbitrary attributes with custom action" in new WithServer {
+      val response = Helpers.await(wsUrl(s"/actions/u2i.json").post(Map(
+        "pio_appkey" -> Seq("appkey"),
+        "pio_action" -> Seq("visit-market-and-bought"),
+        "pio_uid" -> Seq("baz"),
+        "pio_iid" -> Seq("farmers-market"),
+        "carrots" -> Seq("2"),
+        "apples" -> Seq("3"))))
+      val actions = u2iActions.getAllByAppid(appid).toSeq
+      val action = actions.filter(a => a.uid == "baz").apply(0)
+      action.attributes must beSome(Map("carrots" -> "2", "apples" -> "3")) and
+        (action.action must_== "visit-market-and-bought")
     }
   }
 

@@ -161,6 +161,7 @@ object API extends Controller {
         Valid
     } getOrElse (Invalid(ValidationError("Must not contain any tab characters.")))
   }
+  val actionNames: Mapping[String] = of[String] verifying Constraints.pattern("""[0-9A-Za-z_-]+""".r, "pio_action", "Must be consist of alphanumeric, - and _ characters.")
   val latlngRegex = """-?\d+(\.\d*)?,-?\d+(\.\d*)?""".r
   val latlng: Mapping[String] = of[String] verifying Constraint[String]("latlng", () => latlngRegex) {
     o =>
@@ -367,33 +368,38 @@ object API extends Controller {
   /** unified user to item action handler */
   def userToItemAction(format: String) = Action { implicit request =>
     FormattedResponse(format) {
-      Form(tuple(
+      Attributes(tuple(
         "pio_appkey" -> nonEmptyText,
-        "pio_action" -> nonEmptyText,
+        "pio_action" -> actionNames,
         "pio_uid" -> nonEmptyText,
         "pio_iid" -> nonEmptyText,
         "pio_t" -> optional(timestamp),
         "pio_latlng" -> optional(latlng),
         "pio_rate" -> optional(number(1, 5)),
         "pio_price" -> optional(numeric)
-      )).bindFromRequest.fold(
+      ), Set( // all reserved attributes
+        "pio_appkey",
+        "pio_action",
+        "pio_uid",
+        "pio_iid",
+        "pio_t",
+        "pio_latlng",
+        "pio_rate",
+        "pio_price"
+      )).bindFromRequestAndFold(
         f => bindFailed(f.errors),
-        fdata => AuthenticatedApp(fdata._1) { implicit app =>
+        (fdata, attributes) => AuthenticatedApp(fdata._1) { implicit app =>
           val (appkey, action, uid, iid, t, latlng, rate, price) = fdata
 
           val vValue: Option[Int] = action match {
             case "rate" => rate
             case _ => None
           }
-          val validActions = List(u2iActions.rate, u2iActions.like, u2iActions.dislike, u2iActions.view, u2iActions.conversion)
 
           // additional user input checking
           if ((action == u2iActions.rate) && (vValue == None)) {
             APIMessageResponse(BAD_REQUEST, Map("errors" -> APIErrors(Seq(Map("field" -> "pio_rate", "message" -> "Required for rate action.")))))
-          } else if (!validActions.contains(action)) {
-            APIMessageResponse(BAD_REQUEST, Map("errors" -> APIErrors(Seq(Map("field" -> "pio_action", "message" -> "Custom action is not supported yet.")))))
           } else {
-
             u2iActions.insert(U2IAction(
               appid = app.id,
               action = action,
@@ -402,7 +408,8 @@ object API extends Controller {
               t = t map { parseDateTimeFromString(_) } getOrElse DateTime.now,
               latlng = latlng map { parseLatlng(_) },
               v = vValue,
-              price = price map { _.toDouble }
+              price = price map { _.toDouble },
+              attributes = if (attributes.isEmpty) None else Some(attributes)
             ))
             APIMessageResponse(CREATED, Map("message" -> ("Action " + action + " recorded.")))
           }
