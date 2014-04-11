@@ -102,7 +102,8 @@ abstract class MahoutJob {
 
     val input = args("input")
     val output = args("output")
-    val numRecommendations: Int = getArgOpt(args, "numRecommendations", "10").toInt
+    val numRecommendations: Int = getArgOpt(args, "numRecommendations").
+      map(_.toInt).getOrElse(Int.MaxValue)
 
     val dataModel: DataModel = new FileDataModel(new File(input))
     val recommender: Recommender = buildRecommender(dataModel, args)
