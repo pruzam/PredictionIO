@@ -1,6 +1,6 @@
 name := "predictionio-api"
 
-version := "0.7.0-ro1-SNAPSHOT"
+version := "0.7.0-ro1"
 
 organization := "io.prediction"
 
