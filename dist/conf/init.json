@@ -56,6 +56,17 @@
                         "sliderstep": 1
                     }
                 },
+                "freshnessTimeUnit": {
+                    "name": "Time Unit for Freshness",
+                    "description": "The time unit in seconds for freshness prioritization. As an example, if you set this to one day (86400), and freshness is set to 10, items that are one day old would have their score degraded by a bit more than 60%.",
+                    "constraint": {
+                        "paramtype": "long"
+                    },
+                    "ui": {
+                        "uitype": "text"
+                    },
+                    "defaultvalue": 86400
+                },
                 "unseenonly": {
                     "name": "",
                     "description": "",
@@ -134,6 +145,17 @@
                     "ui": {
                         "uitype": "text"
                     }
+                },
+                "dedupByAttribute": {
+                    "name": "Dedup By Attribute",
+                    "description": "When specified, the engine returns at most 1 item per custom attribute value.",
+                    "constraint": {
+                        "paramtype": "string"
+                    },
+                    "defaultvalue": "",
+                    "ui": {
+                        "uitype": ""
+                    }
                 }
             },
             "paramsections": [
@@ -143,6 +165,7 @@
                     "description": "You could adjust the following parameters using the sliders. Higher value means more important to your App.",
                     "params": [
                         "freshness",
+                        "freshnessTimeUnit",
                         "serendipity"
                     ],
                     "subsections": [
@@ -157,7 +180,7 @@
                         {
                             "name": "Seen Actions",
                             "sectiontype": "normal",
-                            "description": "Actions to be treated as seen (space-separated string). If empty, all actions will be treated as seen.",
+                            "description": "Actions to be treated as seen (space-separated string, e.g. 'like rate'). If empty, all actions will be treated as seen.",
                             "params": [
                                 "seenActions"
                             ]
@@ -167,6 +190,14 @@
                             "sectiontype": "normal",
                             "params": [
                                 "numRecommendations"
+                            ]
+                        },
+                        {
+                            "name": "Dedup by Custom Attribute",
+                            "sectiontype": "normal",
+                            "description": "Only return at most one item per attribute value.",
+                            "params": [
+                                "dedupByAttribute"
                             ]
                         }
                     ]
@@ -2970,14 +3001,14 @@
             "name": "Mahout's kNN Item Based Collaborative Filtering (extension to GenericItemBased) (Single Machine)",
             "description": "Predicts user preferences based on previous behaviors of users on similar items (Single Machine).",
             "batchcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnitembased.KNNItemBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --outputSim $localTempDir$itemSim.csv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --itemSimilarity $itemSimilarity$ --weighted $weighted$ --nearestN $nearestN$ --threshold $threshold$ --preComputeItemSim $preComputeItemSim$ --similarItemsPerItem $similarItemsPerItem$ --unseenOnly $unseenOnly$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnitembased.KNNItemBasedJob --inputDir $localTempDir$ --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --outputSim $localTempDir$itemSim.csv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --itemSimilarity $itemSimilarity$ --weighted $weighted$ --nearestN $nearestN$ --threshold $threshold$ --preComputeItemSim $preComputeItemSim$ --similarItemsPerItem $similarItemsPerItem$ --unseenOnly $unseenOnly$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
             ],
             "offlineevalcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnitembased.KNNItemBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --outputSim $localTempDir$itemSim.csv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --itemSimilarity $itemSimilarity$ --weighted $weighted$ --nearestN $nearestN$ --threshold $threshold$ --preComputeItemSim $preComputeItemSim$ --similarItemsPerItem $similarItemsPerItem$ --unseenOnly $unseenOnly$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnitembased.KNNItemBasedJob --inputDir $localTempDir$ --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --outputSim $localTempDir$itemSim.csv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --itemSimilarity $itemSimilarity$ --weighted $weighted$ --nearestN $nearestN$ --threshold $threshold$ --preComputeItemSim $preComputeItemSim$ --similarItemsPerItem $similarItemsPerItem$ --unseenOnly $unseenOnly$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
             ],
             "paramorder": [
                 "booleanData",
@@ -2998,6 +3029,7 @@
             "datareq": [
                 "Users, Items, and U2I Actions such as Like, Conversion and Rate."
             ],
+            "capabilities": ["freshness"],
             "params": {
                 "booleanData": {
                     "name": "Boolean Data",
@@ -3409,14 +3441,14 @@
             "name": "Mahout's kNN User Based Collaborative Filtering (Single Machine)",
             "description": "Predicts user preferences based on previous behaviors of users who are the k-nearest neighbors (Single Machine).",
             "batchcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnuserbased.KNNUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --nearestN $nearestN$ --userSimilarity $userSimilarity$ --weighted $weighted$ --minSimilarity $minSimilarity$ --samplingRate $samplingRate$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnuserbased.KNNUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --nearestN $nearestN$ --userSimilarity $userSimilarity$ --weighted $weighted$ --minSimilarity $minSimilarity$ --samplingRate $samplingRate$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
             ],
             "offlineevalcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnuserbased.KNNUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --nearestN $nearestN$ --userSimilarity $userSimilarity$ --weighted $weighted$ --minSimilarity $minSimilarity$ --samplingRate $samplingRate$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.knnuserbased.KNNUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --nearestN $nearestN$ --userSimilarity $userSimilarity$ --weighted $weighted$ --minSimilarity $minSimilarity$ --samplingRate $samplingRate$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
             ],
             "paramorder": [
                 "booleanData",
@@ -3436,6 +3468,7 @@
             "datareq": [
                 "Users, Items, and U2I Actions such as Like, Conversion and Rate."
             ],
+            "capabilities": ["freshness"],
             "params": {
                 "booleanData": {
                     "name": "Boolean Data",
@@ -3849,14 +3882,14 @@
             "name": "Mahout's Threshold User Based Collaborative Filtering (Single Machine)",
             "description": "Predicts user preferences based on previous behaviors of users whose similarity meets or exceeds a certain threshold (Single Machine).",
             "batchcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.thresholduserbased.ThresholdUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --threshold $threshold$ --userSimilarity $userSimilarity$ --weighted $weighted$ --samplingRate $samplingRate$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.thresholduserbased.ThresholdUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --threshold $threshold$ --userSimilarity $userSimilarity$ --weighted $weighted$ --samplingRate $samplingRate$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
             ],
             "offlineevalcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.thresholduserbased.ThresholdUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --threshold $threshold$ --userSimilarity $userSimilarity$ --weighted $weighted$ --samplingRate $samplingRate$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.thresholduserbased.ThresholdUserBasedJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --booleanData $booleanData$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --threshold $threshold$ --userSimilarity $userSimilarity$ --weighted $weighted$ --samplingRate $samplingRate$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --numRecommendations $numRecommendations$ --booleanData $booleanData$"
             ],
             "paramorder": [
                 "booleanData",
@@ -3875,6 +3908,7 @@
             "datareq": [
                 "Users, Items, and U2I Actions such as Like, Conversion and Rate."
             ],
+            "capabilities": ["freshness"],
             "params": {
                 "booleanData": {
                     "name": "Boolean Data",
@@ -4256,14 +4290,14 @@
             "name": "Mahout's ALS-WR (Single Machine)",
             "description": "Predict user preferences using matrix factorization (Single Machine).",
             "batchcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.alswr.ALSWRJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --numFeatures $numFeatures$ --lambda $lambda$ --numIterations $numIterations$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.alswr.ALSWRJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --numFeatures $numFeatures$ --lambda $lambda$ --numIterations $numIterations$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --numRecommendations $numRecommendations$"
             ],
             "offlineevalcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.alswr.ALSWRJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --numRecommendations $numRecommendations$ --numFeatures $numFeatures$ --lambda $lambda$ --numIterations $numIterations$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.alswr.ALSWRJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --numFeatures $numFeatures$ --lambda $lambda$ --numIterations $numIterations$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --numRecommendations $numRecommendations$"
             ],
             "paramorder": [
                 "numFeatures",
@@ -4280,6 +4314,7 @@
             "datareq": [
                 "Users, Items, and U2I Actions such as Like, Conversion and Rate."
             ],
+            "capabilities": ["freshness"],
             "params": {
                 "numFeatures": {
                     "name": "Number of Factorized Features",
@@ -4595,14 +4630,14 @@
             "name": "Mahout's SVD-RatingSGD Recommender (Single Machine)",
             "description": "Predict user preferences using matrix factorization (Single Machine).",
             "batchcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdsgd.SVDSGDJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdsgd.SVDSGDJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --numRecommendations $numRecommendations$"
             ],
             "offlineevalcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdsgd.SVDSGDJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --numRecommendations $numRecommendations$ --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdsgd.SVDSGDJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --numRecommendations $numRecommendations$"
             ],
             "paramorder": [
                 "numFeatures",
@@ -4622,6 +4657,7 @@
             "datareq": [
                 "Users, Items, and U2I Actions such as Like, Conversion and Rate."
             ],
+            "capabilities": ["freshness"],
             "params": {
                 "numFeatures": {
                     "name": "Number of Factorized Features",
@@ -5033,14 +5069,14 @@
             "name": "Mahout's SVDPlusPlus Recommender (Single Machine)",
             "description": "Predict user preferences using matrix factorization (Single Machine).",
             "batchcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdplusplus.SVDPlusPlusJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdplusplus.SVDPlusPlusJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --modelSet $modelset$ --numRecommendations $numRecommendations$"
             ],
             "offlineevalcommands": [
-                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false",
-                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdplusplus.SVDPlusPlusJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --numRecommendations $numRecommendations$ --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$",
-                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --unseenOnly $unseenOnly$ --numRecommendations $numRecommendations$"
+                "$base$/bin/itemrec.generic.dataprep --outputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ $itypes$ --viewParam $viewParam$ --likeParam $likeParam$ --dislikeParam $dislikeParam$ --conversionParam $conversionParam$ --conflictParam $conflictParam$ --recommendationTime $recommendationTime$ --matrixMarket false --seenActions $seenActions$",
+                "$base$/bin/itemrec.mahout.mahoutjob io.prediction.algorithms.mahout.itemrec.svdplusplus.SVDPlusPlusJob --input $localTempDir$ratings.csv --output $localTempDir$predicted.tsv --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --numRecommendations $numRecommendations$ --unseenOnly $unseenOnly$ --seenFile $localTempDir$seen.csv --numFeatures $numFeatures$ --learningRate $learningRate$ --preventOverfitting $preventOverfitting$ --randomNoise $randomNoise$ --numIterations $numIterations$ --learningRateDecay $learningRateDecay$ --freshness $freshness$ --recommendationTime $recommendationTime$ --freshnessTimeUnit $freshnessTimeUnit$",
+                "$base$/bin/itemrec.mahout.modelcon --inputDir $localTempDir$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --evalid $evalid$ --modelSet $modelset$ --numRecommendations $numRecommendations$"
             ],
             "paramorder": [
                 "numFeatures",
@@ -5060,6 +5096,7 @@
             "datareq": [
                 "Users, Items, and U2I Actions such as Like, Conversion and Rate."
             ],
+            "capabilities": ["freshness"],
             "params": {
                 "numFeatures": {
                     "name": "Number of Factorized Features",
