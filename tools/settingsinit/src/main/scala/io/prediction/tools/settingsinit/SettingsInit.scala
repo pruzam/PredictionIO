@@ -136,7 +136,7 @@ object SettingsInit {
           S(engineinfoid) = info("engineinfoid")
           SS(techreq) = info("techreq")
           SS(datareq) = info("datareq")
-          OSS(capabilities) = info("capabilities")
+          OSS(capabilities) = info.get("capabilities")
         } yield {
           println(s"Processing AlgoInfo ID: ${id}")
           val castedparams = mapToParams(params)
@@ -293,6 +293,7 @@ object SettingsInit {
         case "boolean" => ParamBooleanConstraint()
         case "double" => ParamDoubleConstraint(min = paramconstraint.get("min").map(_.asInstanceOf[Double]), max = paramconstraint.get("max").map(_.asInstanceOf[Double]))
         case "integer" => ParamIntegerConstraint(min = paramconstraint.get("min").map(_.asInstanceOf[Int]), max = paramconstraint.get("max").map(_.asInstanceOf[Int]))
+        case "long" => ParamLongConstraint(min = paramconstraint.get("min").map(_.asInstanceOf[Long]), max = paramconstraint.get("max").map(_.asInstanceOf[Long]))
         case "string" => ParamStringConstraint()
         case _ => ParamStringConstraint()
       }
@@ -312,6 +313,7 @@ object SettingsInit {
       }
       val casteddefault = constraint.paramtype match {
         case "integer" => param("defaultvalue").asInstanceOf[Double].toInt
+        case "long" => param("defaultvalue").asInstanceOf[Double].toLong
         case _ => param("defaultvalue")
       }
       (p._1, Param(

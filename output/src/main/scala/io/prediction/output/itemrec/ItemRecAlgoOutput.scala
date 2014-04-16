@@ -1,17 +1,20 @@
 package io.prediction.output.itemrec
 
 import io.prediction.commons.Config
-import io.prediction.commons.appdata.Items
+import io.prediction.commons.appdata.{ Item, Items }
 import io.prediction.commons.modeldata.ItemRecScore
 import io.prediction.commons.settings.{ Algo, App, Engine, OfflineEval }
 
 import scala.util.Random
+import scala.collection.mutable
 
 import com.github.nscala_time.time.Imports._
 
 trait ItemRecAlgoOutput {
   /** output the Seq of iids */
-  def output(uid: String, n: Int, itypes: Option[Seq[String]])(implicit app: App, algo: Algo, offlineEval: Option[OfflineEval]): Iterator[String]
+  def output(uid: String, n: Int, itypes: Option[Seq[String]])(
+    implicit app: App, algo: Algo,
+    offlineEval: Option[OfflineEval]): Seq[(String, Double)]
 }
 
 object ItemRecAlgoOutput {
@@ -28,32 +31,73 @@ object ItemRecAlgoOutput {
     serendipity.map { s => n * (s + 1) }.getOrElse(n)
   }
 
-  def serendipityOutput(output: Seq[String], n: Int)(implicit engine: Engine) = {
+  def serendipityOutput(output: Seq[(Item, Double)],
+    n: Int)(implicit engine: Engine) = {
     val serendipity = engine.params.get("serendipity").map(_.asInstanceOf[Int])
     /** Serendipity output. */
     serendipity.map { s =>
       if (s > 0)
-        Random.shuffle(output).take(n)
+        Random.shuffle(output.take(n * (s + 1)))
       else
         output
     } getOrElse output
   }
 
-  def freshnessOutput(output: Seq[String], n: Int)(implicit app: App, engine: Engine, items: Items) = {
+  def freshnessOutput(output: Seq[(Item, Double)])(implicit app: App,
+    engine: Engine, items: Items) = {
     val freshness = engine.params.get("freshness").map(_.asInstanceOf[Int])
-
+    val freshnessTimeUnit = engine.params.get("freshnessTimeUnit").map(
+      _.asInstanceOf[Long])
     /** Freshness output. */
-    freshness map { f =>
-      if (f > 0) {
-        val freshnessN = scala.math.round(n * f / 10)
-        val otherN = n - freshnessN
-        val freshnessOutput = items.getRecentByIds(app.id, output).map(_.id)
-        val finalFreshnessOutput = freshnessOutput.take(freshnessN)
-        val finalFreshnessOutputSet = finalFreshnessOutput.toSet
-        finalFreshnessOutput ++ (output filterNot { finalFreshnessOutputSet(_) }).take(otherN)
-      } else
-        output
-    } getOrElse output
+    (freshness, freshnessTimeUnit) match {
+      case (Some(f), Some(ftu)) => if (f > 0) {
+        val recommendationTime = DateTime.now.millis
+        output.map { itemAndScore =>
+          val item = itemAndScore._1
+          item.starttime map { st =>
+            val timeDiff = (recommendationTime - st.millis) / 1000 / ftu
+            if (timeDiff > 0)
+              (itemAndScore._1, itemAndScore._2 * scala.math.exp(-timeDiff /
+                (11 - f)))
+            else
+              itemAndScore
+          } getOrElse itemAndScore
+        }.sortBy(t => t._2).reverse
+      } else output
+      case _ => output
+    }
+  }
+
+  private def dedupByAttribute(output: Seq[(Item, Double)],
+    attribute: String) = {
+    val seenValueSet = mutable.Set[String]()
+    output.filter { itemAndScore =>
+      if (itemAndScore._1.attributes.isEmpty) {
+        false
+      } else if (!itemAndScore._1.attributes.get.contains(attribute)) {
+        // If item doesn't have the attribute, drop the item
+        false
+      } else {
+        val attributeValue = itemAndScore._1.attributes.get(attribute)
+          .asInstanceOf[String]
+        if (seenValueSet(attributeValue)) {
+          false
+        } else {
+          seenValueSet.add(attributeValue)
+          true
+        }
+      }
+    }
+  }
+
+  def dedupOutput(output: Seq[(Item, Double)])(implicit engine: Engine) = {
+    val attribute = engine.params.get("dedupByAttribute")
+      .map(_.asInstanceOf[String])
+
+    if (!attribute.isEmpty && attribute.get != "")
+      dedupByAttribute(output, attribute.get)
+    else
+      output
   }
 
   /**
@@ -78,7 +122,7 @@ object ItemRecAlgoOutput {
      * Determine capability of algo to see what this engine output layer needs
      * to handle.
      */
-    val engineCapabilities = Seq("serendipity", "freshness")
+    val engineCapabilities = Seq("dedupByAttribute", "freshness", "serendipity")
     val algoCapabilities = algoInfos.get(algo.infoid).map(_.capabilities).
       getOrElse(Seq())
     val handledByEngine = engineCapabilities.filterNot(
@@ -96,40 +140,42 @@ object ItemRecAlgoOutput {
      * geospatial constraint is 100. A "manual join" is still feasible with this
      * size.
      */
-    val (iids, iidsCopy): (Iterator[String], Iterator[String]) = latlng.map { ll =>
-      val geoItems = items.getByAppidAndLatlng(app.id, ll, within, unit).map(_.id).toSet
-      // use n = 0 to return all available iids for now
-      ItemRecCFAlgoOutput.output(uid, 0, itypes).filter { geoItems(_) }
-    }.getOrElse {
-      // use n = 0 to return all available iids for now
-      ItemRecCFAlgoOutput.output(uid, 0, itypes)
-    }.duplicate
+    val iidsAndScores =
+      latlng.map { ll =>
+        val geoItems = items.getByAppidAndLatlng(app.id, ll, within, unit)
+          .map(_.id).toSet
+        // use n = 0 to return all available iids for now
+        ItemRecCFAlgoOutput.output(uid, 0, itypes).filter(t => geoItems(t._1))
+      }.getOrElse {
+        // use n = 0 to return all available iids for now
+        ItemRecCFAlgoOutput.output(uid, 0, itypes)
+      }.toSeq
+    val iids = iidsAndScores map { _._1 }
 
     /** Start and end time filtering. */
-    val itemsForTimeCheck = items.getByIds(app.id, iidsCopy.toSeq)
-    val iidsWithValidTimeSet = (itemsForTimeCheck filter { item =>
+    val itemsForTimeCheck = items.getByIds(app.id, iids)
+    val iidsWithValidTimeMap = (itemsForTimeCheck filter { item =>
       (item.starttime, item.endtime) match {
         case (Some(st), None) => DateTime.now >= st
         case (None, Some(et)) => DateTime.now <= et
         case (Some(st), Some(et)) => st <= DateTime.now && DateTime.now <= et
         case _ => true
       }
-    } map { _.id }).toSet
-    val iidsWithValidTime: Iterator[String] = iids.filter { iidsWithValidTimeSet(_) }
+    }).map(item => (item.id, item)).toMap
 
-    /**
-     * At this point "output" is guaranteed to have n*(s+1) items (seen or
-     * unseen) unless model data is exhausted.
-     */
-    val output = iidsWithValidTime.take(filterN).toSeq
+    val itemsAndScoresWithValidTime = iidsAndScores
+      .filter(t => iidsWithValidTimeMap.contains(t._1))
+      .map(t => (iidsWithValidTimeMap(t._1), t._2))
 
-    val finalOutput = handledByEngine.foldLeft(output) { (output, cap) =>
-      cap match {
-        case "serendipity" => serendipityOutput(output, n)
-        case "freshness" => freshnessOutput(output, n)
-      }
+    val finalOutput = handledByEngine.foldLeft(itemsAndScoresWithValidTime) {
+      (output, cap) =>
+        cap match {
+          case "dedupByAttribute" => dedupOutput(output)
+          case "freshness" => freshnessOutput(output)
+          case "serendipity" => serendipityOutput(output, n)
+        }
     }
 
-    finalOutput
+    finalOutput.take(n).map(_._1.id)
   }
 }

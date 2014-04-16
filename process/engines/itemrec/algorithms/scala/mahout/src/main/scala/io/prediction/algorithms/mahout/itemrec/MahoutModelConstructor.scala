@@ -63,7 +63,7 @@ object MahoutModelConstructor {
       algoid = args("algoid").toInt,
       evalid = args.optional("evalid") map (x => x.toInt),
       modelSet = args("modelSet").toBoolean,
-      unseenOnly = args("unseenOnly").toBoolean,
+      unseenOnly = args.optional("unseenOnly").map(_.toBoolean).getOrElse(false),
       numRecommendations = args("numRecommendations").toInt,
       booleanData = args.optional("booleanData").map(x => x.toBoolean).getOrElse(false),
       implicitFeedback = args.optional("implicitFeedback").map(x => x.toBoolean).getOrElse(false)
@@ -103,31 +103,9 @@ object MahoutModelConstructor {
         (uindex, uid)
       }.toMap
 
-    case class ItemData(
-      val iid: String,
-      val itypes: Seq[String])
+    val itemsMap = MahoutCommons.itemsMap(s"${arg.inputDir}itemsIndex.tsv")
 
-    // item index file (iindex iid itypes)
-    // iindex -> ItemData
-    val itemsMap: Map[Int, ItemData] = Source.fromFile(s"${arg.inputDir}itemsIndex.tsv")
-      .getLines()
-      .map[(Int, ItemData)] { line =>
-        val (iindex, item) = try {
-          val fields = line.split("\t")
-          val itemData = ItemData(
-            iid = fields(1),
-            itypes = fields(2).split(",").toList
-          )
-          (fields(0).toInt, itemData)
-        } catch {
-          case e: Exception => {
-            throw new RuntimeException(s"Cannot get item info in line: ${line}. ${e}")
-          }
-        }
-        (iindex, item)
-      }.toMap
-
-    // ratings file (for unseen filtering) 
+    // ratings file (for unseen filtering)
     val seenMap: Map[(Int, Int), Double] = if (arg.unseenOnly) {
       Source.fromFile(s"${arg.inputDir}ratings.csv")
         .getLines()
@@ -235,7 +213,7 @@ object MahoutModelConstructor {
     if (enable) (!seenMap.contains((uindex, iindex))) else true
   }
 
-  def validItemFilter(enable: Boolean, iindex: Int, validMap: Map[Int, Any]): Boolean = {
+  def validItemFilter(enable: Boolean, iindex: Int, validMap: Map[Long, Any]): Boolean = {
     if (enable) validMap.contains(iindex) else true
   }
 
