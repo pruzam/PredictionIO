@@ -19,9 +19,14 @@ packExpandedClasspath := true
 packGenerateWindowsBatFile := false
 
 packMain := Map(
-  "itemrec.mahout.mahoutjob" -> "io.prediction.algorithms.mahout.itemrec.MahoutJob",
-  "itemrec.mahout.modelcon" -> "io.prediction.algorithms.mahout.itemrec.MahoutModelConstructor")
+  "itemrec.mahout.mahoutjob" ->
+    "io.prediction.algorithms.mahout.itemrec.MahoutJob",
+  "itemrec.mahout.modelcon" ->
+    "io.prediction.algorithms.mahout.itemrec.MahoutModelConstructor",
+  "itemrec.mahout.ltmodelcon" ->
+    "io.prediction.algorithms.mahout.itemrec.LTMahoutModelConstructor")
 
 packJvmOpts := Map(
   "itemrec.mahout.mahoutjob" -> Common.packCommonJvmOpts,
-  "itemrec.mahout.modelcon" -> Common.packCommonJvmOpts)
+  "itemrec.mahout.modelcon" -> Common.packCommonJvmOpts,
+  "itemrec.mahout.ltmodelcon" -> Common.packCommonJvmOpts)
