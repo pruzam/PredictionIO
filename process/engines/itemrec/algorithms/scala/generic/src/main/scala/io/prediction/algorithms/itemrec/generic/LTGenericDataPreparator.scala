@@ -307,9 +307,9 @@ object LTGenericDataPreparator {
       closetRatings.filterNot(x => u2i.exists(
         s => s._1 == x.uid && s._2 == x.iid))).getOrElse(closetRatings)
     val closetWriter = new BufferedWriter(new FileWriter(
-      new File(s"{arg.outputDir}closet.csv")))
+      new File(s"${arg.outputDir}closet.csv")))
     unseenClosetRatings.foreach(x =>
-      closetWriter.write(s"${x.uid},${x.iid}"))
+      closetWriter.write(s"${x.uid},${x.iid}\n"))
     closetWriter.close()
   }
 
