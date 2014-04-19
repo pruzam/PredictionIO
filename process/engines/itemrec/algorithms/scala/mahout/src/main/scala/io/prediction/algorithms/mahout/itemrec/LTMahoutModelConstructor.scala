@@ -173,18 +173,25 @@ object LTMahoutModelConstructor {
 
         // add a closet item if needed
         val closetItems = closetMap.get(uindex)
-        val magicTopScores = closetItems.map(c =>
+        val magicTopScores = closetItems map { c =>
           if ((topScores.map(_._1).toSet & c.toSet).size == 0) {
-            val hash = uindex % arg.numRecommendations
-            topScores.slice(0, hash) ++ Seq(c(hash)) ++
-              topScores.slice(hash, arg.numRecommendations - 1)
-          } else topScores).getOrElse(topScores)
+            val pickedItem = c(uindex % c.size)
+            if (topScores.size < arg.numRecommendations) {
+              topScores ++ Seq((pickedItem, topScores(topScores.size - 1)._2))
+            } else {
+              val hash = (uindex + pickedItem) % topScores.size
+              topScores.slice(0, hash) ++
+                Seq((pickedItem, topScores(hash)._2)) ++
+                topScores.slice(hash, arg.numRecommendations - 1)
+            }
+          } else topScores
+        } getOrElse topScores
 
         modeldataDb.insert(ItemRecScore(
           uid = usersMap(uindex),
-          iids = topScores.map(x => itemsMap(x._1).iid),
-          scores = topScores.map(_._2),
-          itypes = topScores.map(x => itemsMap(x._1).itypes),
+          iids = magicTopScores.map(x => itemsMap(x._1).iid),
+          scores = magicTopScores.map(_._2),
+          itypes = magicTopScores.map(x => itemsMap(x._1).itypes),
           appid = appid,
           algoid = arg.algoid,
           modelset = arg.modelSet))
