@@ -2,7 +2,7 @@
 
 # This script should be sourced with $BASE set to the base of the binary package
 
-VERSION=0.7.0-ca3-SNAPSHOT
+VERSION=0.7.0-ca3
 
 # Play framework related
 PLAY_OPTS=""
