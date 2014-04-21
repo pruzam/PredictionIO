@@ -1,6 +1,6 @@
 name := "predictionio"
 
-version in ThisBuild := "0.7.0-jo1-SNAPSHOT"
+version in ThisBuild := "0.7.0-jo1"
 
 organization in ThisBuild := "io.prediction"
 
