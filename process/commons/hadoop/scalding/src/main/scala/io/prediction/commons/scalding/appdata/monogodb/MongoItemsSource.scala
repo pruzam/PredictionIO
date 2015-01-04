@@ -52,13 +52,15 @@ class MongoItemsSource(db: String, hosts: Seq[String], ports: Seq[Int], appid: I
     itemsMappings
   },
   query = { // read query
-    val itemsQuery = MongoDBObject("appid" -> appid) ++ (itypes.map(x => MongoDBObject("itypes" -> MongoDBObject("$in" -> x))).getOrElse(MongoDBObject()))
+    val itemsQuery = MongoDBObject("appid" -> appid)
 
     itemsQuery
   },
   hosts = hosts, // String
   ports = ports // Int
 ) with ItemsSource {
+
+  val activeItypes: List[String] = itypes.getOrElse(List())
 
   import com.twitter.scalding.Dsl._ // get all the fancy implicit conversions that define the DSL
 
@@ -101,17 +103,19 @@ class MongoItemsSource(db: String, hosts: Seq[String], ports: Seq[Int], appid: I
             case _ => None
           }
 
+          val _itypes: List[String] = itypes.toList.map(x => x.toString)
+          val _inactive: Option[Boolean] = Some(inactive.getOrElse(false) || (!activeItypes.isEmpty && activeItypes.intersect(_itypes).isEmpty))
           Item(
             id = id,
             appid = appid,
             ct = new DateTime(ct),
-            itypes = itypes.toList.map(x => x.toString),
+            itypes = _itypes,
             starttime = Some(new DateTime(starttime)),
             endtime = Option(endtime).map(x => new DateTime(x)),
             price = None,
             profit = None,
             latlng = None,
-            inactive = inactive,
+            inactive = _inactive,
             attributes = None
           )
 
